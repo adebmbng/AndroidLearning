@@ -13,18 +13,22 @@ import android.widget.Toast;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import retrofit2.Call;
+import retrofit2.Callback;
 
 /**
  * Created by Debam on 12/19/17.
  */
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private static final String UNAME = "admin";
     private static final String PWD = "password";
 
-    @BindView(R.id.etUsername)EditText username;
-    @BindView(R.id.etPassword)EditText password;
+    @BindView(R.id.etUsername)
+    EditText username;
+    @BindView(R.id.etPassword)
+    EditText password;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -35,24 +39,63 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     @OnClick(R.id.btnLogin)
-    void gotoLogin(){
-        if(validatePwd()) {
-            String u = username.getText().toString();
-            Intent i = new Intent(LoginActivity.this, MainActivity.class);
-            i.putExtra("username", u);
-            startActivity(i);
-            finish();
-        } else {
-            Toast.makeText(this, "Username/Password is Invalid", Toast.LENGTH_LONG)
-                    .show();
-        }
+    void gotoLogin() {
+
+        String u = username.getText().toString();
+        String p = password.getText().toString();
+        Call<ResponseLogin> call = getApi().doLogin(u, p);
+
+        call.enqueue(new Callback<ResponseLogin>() {
+            @Override
+            public void onResponse(Call<ResponseLogin> call, retrofit2.Response<ResponseLogin> response) {
+                if (response.isSuccessful()) {
+                    ResponseLogin res = response.body();
+                    if (res.getStatus().equals("200")) {
+                        Intent i = new Intent(LoginActivity.this, MainActivity.class);
+                        i.putExtra("username", res.getFullname());
+                        startActivity(i);
+                        finish();
+                    } else if (res.getStatus().equals("500")) {
+                        Toast.makeText(LoginActivity.this,
+                                response.body().getMessage(),
+                                Toast.LENGTH_LONG)
+                                .show();
+                    }
+                } else {
+                    Toast.makeText(LoginActivity.this,
+                            "Connection Refused",
+                            Toast.LENGTH_LONG)
+                            .show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseLogin> call, Throwable t) {
+                Toast.makeText(LoginActivity.this,
+                        "Connection Refused",
+                        Toast.LENGTH_LONG)
+                        .show();
+            }
+        });
+
+
+//        if(validatePwd()) {
+//            String u = username.getText().toString();
+//            Intent i = new Intent(LoginActivity.this, MainActivity.class);
+//            i.putExtra("username", u);
+//            startActivity(i);
+//            finish();
+//        } else {
+//            Toast.makeText(this, "Username/Password is Invalid", Toast.LENGTH_LONG)
+//                    .show();
+//        }
     }
 
     private boolean validatePwd() {
         String u = username.getText().toString();
         String p = password.getText().toString();
 
-        if(u.equals(UNAME) && p.equals(PWD)){
+        if (u.equals(UNAME) && p.equals(PWD)) {
             return true;
         } else {
             return false;
